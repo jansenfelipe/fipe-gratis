@@ -1,5 +1,8 @@
 # FIPE Grátis
 [![Travis](https://travis-ci.org/jansenfelipe/fipe-gratis.svg?branch=1.0)](https://travis-ci.org/jansenfelipe/fipe-gratis)
+[![Latest Stable Version](http://img.shields.io/packagist/v/jansenfelipe/fipe-gratis.svg?style=flat)](https://packagist.org/packages/jansenfelipe/fipe-gratis)
+[![Total Downloads](http://img.shields.io/packagist/dt/jansenfelipe/fipe-gratis.svg?style=flat)](https://packagist.org/packages/jansenfelipe/fipe-gratis)
+[![License](http://img.shields.io/packagist/l/jansenfelipe/fipe-gratis.svg?style=flat)](https://packagist.org/packages/jansenfelipe/fipe-gratis)
 
 Com esse pacote você poderá consultar dados atualizados da tabela FIPE.
 

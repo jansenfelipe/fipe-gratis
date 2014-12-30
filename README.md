@@ -1,17 +1,13 @@
-# CPF Grátis
-[![Travis](https://travis-ci.org/jansenfelipe/cpf-gratis.svg?branch=2.0)](https://travis-ci.org/jansenfelipe/cpf-gratis)
-[![Latest Stable Version](https://poser.pugx.org/jansenfelipe/cpf-gratis/v/stable.svg)](https://packagist.org/packages/jansenfelipe/cpf-gratis) [![Total Downloads](https://poser.pugx.org/jansenfelipe/cpf-gratis/downloads.svg)](https://packagist.org/packages/jansenfelipe/cpf-gratis) [![Latest Unstable Version](https://poser.pugx.org/jansenfelipe/cpf-gratis/v/unstable.svg)](https://packagist.org/packages/jansenfelipe/cpf-gratis) [![License](https://poser.pugx.org/jansenfelipe/cpf-gratis/license.svg)](https://packagist.org/packages/jansenfelipe/cpf-gratis)
+# FIPE Grátis
+[![Travis](https://travis-ci.org/jansenfelipe/fipe-gratis.svg?branch=1.0)](https://travis-ci.org/jansenfelipe/fipe-gratis)
 
+Com esse pacote você poderá consultar dados atualizados da tabela FIPE.
 
-Com esse pacote você poderá realizar consultas de CPF no site da Receita Federal do Brasil gratuitamente.
-
-Atenção: Esse pacote não possui leitor de captcha, mas captura o mesmo para ser digitado pelo usuário
-
-### Para utilizar
+### Como usar
 
 Adicione no seu arquivo `composer.json` o seguinte registro na chave `require`
 
-    "jansenfelipe/cpf-gratis": "2.0.*@dev"
+    "jansenfelipe/fipe-gratis": "1.0.*@dev"
 
 Execute
 
@@ -21,40 +17,63 @@ Adicione o autoload.php do composer no seu arquivo PHP.
 
     require_once 'vendor/autoload.php';  
 
-Primeiro chame o método `getParams()` para retornar os dados necessários para enviar no método `consulta()` 
+Para realizar uma consulta de `precoMedio()`, você vai precisar saber os códigos de Tipo, Tabela, Marca, Modelo e Ano.
 
-    $params = CpfGratis::getParams(); //Output: array('captchaBase64', 'token', 'cookie')
+    $precoMedio = FipeGratis::getPrecoMedio(FipeGratis::CARRO, $codigoTabela, $codigoMarca, $codigoModelo, $codigoAno);
 
-Agora basta chamar o método `consulta()`
+###### Tipos
 
-    $dadosPessoa = CpfGratis::consulta(
-        'INFORME_O_CPF',
-        'INFORME_AS_LETRAS_DO_CAPTCHA',
-        $params['token'],
-        $params['cookie']
-    );
+Os tipos disponíveis são: Carro, Moto e Caminhão. Seus códigos já estão disponíveis em constantes na classe FipeGratis.
+    
+    FipeGratis::CARRO
+    FipeGratis::MOTO
+    FipeGratis::CAMINHAO
+    
+###### Tabelas
+
+As tabelas são os meses de referência. Para saber os códigos das tabelas, basta chamar o método `getTabelas()` passando o Tipo desejado:
+
+    $tabelas = FipeGratis::getTabelas(FipeGratis::CARRO);
+
+###### Marcas
+
+Para saber os códigos das marcas, basta chamar o método `getMarcas()` passando os parâmetros:
+
+    $marcas = FipeGratis::getMarcas(FipeGratis::CARRO, $codigoTabela);
+
+###### Modelos
+
+Para saber os códigos dos modelos, basta chamar o método `getModelos()` passando os parâmetros:
+
+    $modelos = FipeGratis::getModelos(FipeGratis::CARRO, $codigoTabela, $codigoMarca);
+
+###### Anos
+
+Para saber os códigos dos anos, basta chamar o método `getAnos()` passando os parâmetros:
+
+    $anos = FipeGratis::getAnos(FipeGratis::CARRO, $codigoTabela, $codigoMarca, $codigoModelo);
 
 ### Frameworks
 
 ##### (Laravel)
 
-Abra seu arquivo `config/app.php` e adicione `'JansenFelipe\CpfGratis\CpfGratisServiceProvider'` ao final do array `$providers`
+Abra seu arquivo `config/app.php` e adicione `'JansenFelipe\FipeGratis\FipeGratisServiceProvider'` ao final do array `$providers`
 
     'providers' => array(
 
         'Illuminate\Foundation\Providers\ArtisanServiceProvider',
         'Illuminate\Auth\AuthServiceProvider',
         ...
-        'JansenFelipe\CpfGratis\CpfGratisServiceProvider',
+        'JansenFelipe\FipeGratis\FipeGratisServiceProvider',
     ),
 
-Adicione também `'CpfGratis' => 'JansenFelipe\CpfGratis\Facade'` no final do array `$aliases`
+Adicione também `'FipeGratis' => 'JansenFelipe\FipeGratis\Facade'` no final do array `$aliases`
 
     'aliases' => array(
 
         'App'        => 'Illuminate\Support\Facades\App',
         'Artisan'    => 'Illuminate\Support\Facades\Artisan',
         ...
-        'CpfGratis'    => 'JansenFelipe\CpfGratis\Facade',
+        'FipeGratis'    => 'JansenFelipe\FipeGratis\Facade',
 
     ),

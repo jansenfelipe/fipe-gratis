@@ -17,11 +17,9 @@ Adicione o autoload.php do composer no seu arquivo PHP.
 
     require_once 'vendor/autoload.php';  
 
-Para realizar uma consulta de `precoMedio()`, você vai precisar saber os códigos de Tipo, Tabela, Marca, Modelo e Ano.
+Você vai precisar saber antes os códigos de Tipo, Tabela, Marca, Modelo e Ano para chamar o método de consulta `precoMedio()`.
 
-    $precoMedio = FipeGratis::getPrecoMedio(FipeGratis::CARRO, $codigoTabela, $codigoMarca, $codigoModelo, $codigoAno);
-
-###### Tipos
+##### Tipos
 
 Os tipos disponíveis são: Carro, Moto e Caminhão. Seus códigos já estão disponíveis em constantes na classe FipeGratis.
     
@@ -29,25 +27,25 @@ Os tipos disponíveis são: Carro, Moto e Caminhão. Seus códigos já estão di
     FipeGratis::MOTO
     FipeGratis::CAMINHAO
     
-###### Tabelas
+##### Tabelas
 
 As tabelas são os meses de referência. Para saber os códigos das tabelas, basta chamar o método `getTabelas()` passando o Tipo desejado:
 
     $tabelas = FipeGratis::getTabelas(FipeGratis::CARRO);
 
-###### Marcas
+##### Marcas
 
 Para saber os códigos das marcas, basta chamar o método `getMarcas()` passando os parâmetros:
 
     $marcas = FipeGratis::getMarcas(FipeGratis::CARRO, $codigoTabela);
 
-###### Modelos
+##### Modelos
 
 Para saber os códigos dos modelos, basta chamar o método `getModelos()` passando os parâmetros:
 
     $modelos = FipeGratis::getModelos(FipeGratis::CARRO, $codigoTabela, $codigoMarca);
 
-###### Anos
+##### Anos
 
 Para saber os códigos dos anos, basta chamar o método `getAnos()` passando os parâmetros:
 

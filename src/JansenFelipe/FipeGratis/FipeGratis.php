@@ -4,6 +4,7 @@ namespace JansenFelipe\FipeGratis;
 
 use Exception;
 use Goutte\Client;
+use ReflectionClass;
 use Symfony\Component\DomCrawler\Crawler;
 
 /**

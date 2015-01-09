@@ -25,6 +25,19 @@ class FipeGratis {
     private static $__PARAM_VIEWSTATEGENERATOR = null;
     private static $__PARAM_EVENTVALIDATION = null;
 
+    /*
+     * Respostas
+     */
+    private static $__TABELAS = null;
+    private static $__MARCAS = null;
+    private static $__MODELOS = null;
+    private static $__MODELO_ANOS = null;
+    
+    private static $__tipo = null; 
+    private static $__tabelaReferencia = null;
+    private static $__codMarca = null;
+    private static $__codModelo = null;
+
     /**
      * Método para retornar o tipo a partir de uma string
      *
@@ -35,7 +48,7 @@ class FipeGratis {
         $class = new ReflectionClass('JansenFelipe\FipeGratis\FipeGratis');
         return $class->getConstant($string);
     }
-    
+
     /**
      * Método para buscar as tabelas de referencia
      *
@@ -43,14 +56,17 @@ class FipeGratis {
      * @return array
      */
     public static function getTabelas() {
-        $client = new Client();
-        $crawler = $client->request('GET', "http://www.fipe.org.br/web/indices/veiculos/default.aspx");
+        if (is_null(FipeGratis::$__TABELAS)) {
 
-        $tabelas = $crawler->filter('#ddlTabelaReferencia > option')->each(function (Crawler $node) {
-            return array('codigo' => $node->attr('value'), 'tabela' => $node->text());
-        });
+            $client = new Client();
+            $crawler = $client->request('GET', "http://www.fipe.org.br/web/indices/veiculos/default.aspx");
 
-        return $tabelas;
+            FipeGratis::$__TABELAS = $crawler->filter('#ddlTabelaReferencia > option')->each(function (Crawler $node) {
+                return array('codigo' => $node->attr('value'), 'tabela' => $node->text());
+            });
+        }
+
+        return FipeGratis::$__TABELAS;
     }
 
     /**
@@ -62,89 +78,95 @@ class FipeGratis {
      * @return array
      */
     public static function getMarcas($tipo = null, $tabelaReferencia = null) {
-        FipeGratis::setParams($tipo);
+        if (is_null(FipeGratis::$__MARCAS) || is_null(FipeGratis::$__tipo) || FipeGratis::$__tipo != $tipo || is_null(FipeGratis::$__tabelaReferencia) || FipeGratis::$__tabelaReferencia != $tabelaReferencia) {
+            
+            FipeGratis::$__tabelaReferencia = $tabelaReferencia;
+            FipeGratis::$__tipo = $tipo;
+            
+            FipeGratis::setParams($tipo);
 
-        /*
-         * Verificando se exite $tabelaReferencia
-         */
-        $validate = array_filter(FipeGratis::getTabelas(), function($tables) use ($tabelaReferencia) {
-            return ($tables['codigo'] == $tabelaReferencia);
-        });
+            /*
+             * Verificando se exite $tabelaReferencia
+             */
+            $validate = array_filter(FipeGratis::getTabelas(), function($tables) use ($tabelaReferencia) {
+                return ($tables['codigo'] == $tabelaReferencia);
+            });
 
-        if (empty($validate))
-            throw new Exception("A tabela de referencia $tabelaReferencia não existe");
+            if (empty($validate))
+                throw new Exception("A tabela de referencia $tabelaReferencia não existe");
 
 
-        /*
-         * Montando parametros
-         */
-        $paramters = array(
-            'ScriptManager1' => 'UdtMarca|ddlMarca',
-            '__ASYNCPOST' => true,
-            '__EVENTTARGET' => 'ddlMarca',
-            '__LASTFOCUS' => '',
-            '__EVENTARGUMENT' => FipeGratis::$__PARAM_EVENTARGUMENT,
-            '__VIEWSTATE' => FipeGratis::$__PARAM_VIEWSTATE,
-            '__VIEWSTATEGENERATOR' => FipeGratis::$__PARAM_VIEWSTATEGENERATOR,
-            '__EVENTVALIDATION' => FipeGratis::$__PARAM_EVENTVALIDATION,
-            'ddlAnoValor' => 0,
-            'ddlMarca' => 0,
-            'ddlModelo' => 0,
-            'ddlTabelaReferencia' => $tabelaReferencia,
-            'txtCodFipe' => ''
-        );
+            /*
+             * Montando parametros
+             */
+            $paramters = array(
+                'ScriptManager1' => 'UdtMarca|ddlMarca',
+                '__ASYNCPOST' => true,
+                '__EVENTTARGET' => 'ddlMarca',
+                '__LASTFOCUS' => '',
+                '__EVENTARGUMENT' => FipeGratis::$__PARAM_EVENTARGUMENT,
+                '__VIEWSTATE' => FipeGratis::$__PARAM_VIEWSTATE,
+                '__VIEWSTATEGENERATOR' => FipeGratis::$__PARAM_VIEWSTATEGENERATOR,
+                '__EVENTVALIDATION' => FipeGratis::$__PARAM_EVENTVALIDATION,
+                'ddlAnoValor' => 0,
+                'ddlMarca' => 0,
+                'ddlModelo' => 0,
+                'ddlTabelaReferencia' => $tabelaReferencia,
+                'txtCodFipe' => ''
+            );
 
-        /*
-         * Consultando modelos
-         */
-        $ch = curl_init("http://www.fipe.org.br/web/indices/veiculos/default.aspx?$tipo");
-        $options = array(
-            CURLOPT_COOKIEJAR => 'cookiejar',
-            CURLOPT_HTTPHEADER => array(
-                "User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:32.0) Gecko/20100101 Firefox/32.0",
-                "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-                "Accept-Language: pt-BR,pt;q=0.8,en-US;q=0.5,en;q=0.3",
-                "Accept-Encoding: gzip, deflate",
-                "Referer: http://www.fipe.org.br/web/indices/veiculos/default.aspx?$tipo",
-                "Cookie: " . FipeGratis::$__COOKIE . "",
-                "Host: www.fipe.org.br",
-                "Connection: keep-alive",
-                "X-MicrosoftAjax: Delta=true"
-            ),
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_POSTFIELDS => http_build_query($paramters),
-            CURLOPT_FOLLOWLOCATION => 1
-        );
+            /*
+             * Consultando modelos
+             */
+            $ch = curl_init("http://www.fipe.org.br/web/indices/veiculos/default.aspx?$tipo");
+            $options = array(
+                CURLOPT_COOKIEJAR => 'cookiejar',
+                CURLOPT_HTTPHEADER => array(
+                    "User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:32.0) Gecko/20100101 Firefox/32.0",
+                    "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+                    "Accept-Language: pt-BR,pt;q=0.8,en-US;q=0.5,en;q=0.3",
+                    "Accept-Encoding: gzip, deflate",
+                    "Referer: http://www.fipe.org.br/web/indices/veiculos/default.aspx?$tipo",
+                    "Cookie: " . FipeGratis::$__COOKIE . "",
+                    "Host: www.fipe.org.br",
+                    "Connection: keep-alive",
+                    "X-MicrosoftAjax: Delta=true"
+                ),
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_POSTFIELDS => http_build_query($paramters),
+                CURLOPT_FOLLOWLOCATION => 1
+            );
 
-        curl_setopt_array($ch, $options);
-        $html = curl_exec($ch);
-        curl_close($ch);
+            curl_setopt_array($ch, $options);
+            $html = curl_exec($ch);
+            curl_close($ch);
 
-        $explode = explode('|', $html);
+            $explode = explode('|', $html);
 
-        $key = array_search('__EVENTARGUMENT', $explode);
-        FipeGratis::$__PARAM_EVENTARGUMENT = $explode[$key + 1];
+            $key = array_search('__EVENTARGUMENT', $explode);
+            FipeGratis::$__PARAM_EVENTARGUMENT = $explode[$key + 1];
 
-        $key = array_search('__VIEWSTATE', $explode);
-        FipeGratis::$__PARAM_VIEWSTATE = $explode[$key + 1];
+            $key = array_search('__VIEWSTATE', $explode);
+            FipeGratis::$__PARAM_VIEWSTATE = $explode[$key + 1];
 
-        $key = array_search('__VIEWSTATEGENERATOR', $explode);
-        FipeGratis::$__PARAM_VIEWSTATEGENERATOR = $explode[$key + 1];
+            $key = array_search('__VIEWSTATEGENERATOR', $explode);
+            FipeGratis::$__PARAM_VIEWSTATEGENERATOR = $explode[$key + 1];
 
-        $key = array_search('__EVENTVALIDATION', $explode);
-        FipeGratis::$__PARAM_EVENTVALIDATION = $explode[$key + 1];
+            $key = array_search('__EVENTVALIDATION', $explode);
+            FipeGratis::$__PARAM_EVENTVALIDATION = $explode[$key + 1];
 
-        $crawler = new Crawler($html);
-        $options = $crawler->filter('#ddlMarca > option');
+            $crawler = new Crawler($html);
+            $options = $crawler->filter('#ddlMarca > option');
 
-        $marcas = array();
+            FipeGratis::$__MARCAS = array();
 
-        foreach ($options as $node) {
-            if ($node->getAttribute('value') != '0')
-                $marcas[] = array('codigo' => $node->getAttribute('value'), 'marca' => $node->nodeValue);
+            foreach ($options as $node) {
+                if ($node->getAttribute('value') != '0')
+                    FipeGratis::$__MARCAS[] = array('codigo' => $node->getAttribute('value'), 'marca' => $node->nodeValue);
+            }
         }
 
-        return $marcas;
+        return FipeGratis::$__MARCAS;
     }
 
     /**
@@ -157,89 +179,93 @@ class FipeGratis {
      * @return array
      */
     public static function getModelos($tipo = null, $tabelaReferencia = null, $codMarca = null) {
+        if (is_null(FipeGratis::$__MODELOS) || is_null(FipeGratis::$__codMarca) || FipeGratis::$__codMarca != $codMarca) {
 
-        /*
-         * Verificando se exite $codMarca
-         */
-        $validate = array_filter(FipeGratis::getMarcas($tipo, $tabelaReferencia), function($tables) use ($codMarca) {
-            return ($tables['codigo'] == $codMarca);
-        });
+            FipeGratis::$__codMarca = $codMarca;
+            
+            /*
+             * Verificando se exite $codMarca
+             */
+            $validate = array_filter(FipeGratis::getMarcas($tipo, $tabelaReferencia), function($tables) use ($codMarca) {
+                return ($tables['codigo'] == $codMarca);
+            });
 
-        if (empty($validate))
-            throw new Exception("A marca $codMarca não existe");
+            if (empty($validate))
+                throw new Exception("A marca $codMarca não existe");
 
-        /*
-         * Montando parametros
-         */
-        $paramters = array(
-            'ScriptManager1' => 'UdtMarca|ddlMarca',
-            '__ASYNCPOST' => true,
-            '__EVENTTARGET' => 'ddlMarca',
-            '__LASTFOCUS' => '',
-            '__EVENTARGUMENT' => FipeGratis::$__PARAM_EVENTARGUMENT,
-            '__VIEWSTATE' => FipeGratis::$__PARAM_VIEWSTATE,
-            '__VIEWSTATEGENERATOR' => FipeGratis::$__PARAM_VIEWSTATEGENERATOR,
-            '__EVENTVALIDATION' => FipeGratis::$__PARAM_EVENTVALIDATION,
-            'ddlAnoValor' => 0,
-            'ddlMarca' => $codMarca,
-            'ddlModelo' => 0,
-            'ddlTabelaReferencia' => $tabelaReferencia,
-            'txtCodFipe' => ''
-        );
-
-
-        /*
-         * Consultando modelos
-         */
-        $ch = curl_init("http://www.fipe.org.br/web/indices/veiculos/default.aspx?$tipo");
-        $options = array(
-            CURLOPT_COOKIEJAR => 'cookiejar',
-            CURLOPT_HTTPHEADER => array(
-                "User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:32.0) Gecko/20100101 Firefox/32.0",
-                "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-                "Accept-Language: pt-BR,pt;q=0.8,en-US;q=0.5,en;q=0.3",
-                "Accept-Encoding: gzip, deflate",
-                "Referer: http://www.fipe.org.br/web/indices/veiculos/default.aspx?$tipo",
-                "Cookie: " . FipeGratis::$__COOKIE . "",
-                "Host: www.fipe.org.br",
-                "Connection: keep-alive",
-                "X-MicrosoftAjax: Delta=true"
-            ),
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_POSTFIELDS => http_build_query($paramters),
-            CURLOPT_FOLLOWLOCATION => 1
-        );
-
-        curl_setopt_array($ch, $options);
-        $html = curl_exec($ch);
-        curl_close($ch);
-
-        $explode = explode('|', $html);
-
-        $key = array_search('__EVENTARGUMENT', $explode);
-        FipeGratis::$__PARAM_EVENTARGUMENT = $explode[$key + 1];
-
-        $key = array_search('__VIEWSTATE', $explode);
-        FipeGratis::$__PARAM_VIEWSTATE = $explode[$key + 1];
-
-        $key = array_search('__VIEWSTATEGENERATOR', $explode);
-        FipeGratis::$__PARAM_VIEWSTATEGENERATOR = $explode[$key + 1];
-
-        $key = array_search('__EVENTVALIDATION', $explode);
-        FipeGratis::$__PARAM_EVENTVALIDATION = $explode[$key + 1];
+            /*
+             * Montando parametros
+             */
+            $paramters = array(
+                'ScriptManager1' => 'UdtMarca|ddlMarca',
+                '__ASYNCPOST' => true,
+                '__EVENTTARGET' => 'ddlMarca',
+                '__LASTFOCUS' => '',
+                '__EVENTARGUMENT' => FipeGratis::$__PARAM_EVENTARGUMENT,
+                '__VIEWSTATE' => FipeGratis::$__PARAM_VIEWSTATE,
+                '__VIEWSTATEGENERATOR' => FipeGratis::$__PARAM_VIEWSTATEGENERATOR,
+                '__EVENTVALIDATION' => FipeGratis::$__PARAM_EVENTVALIDATION,
+                'ddlAnoValor' => 0,
+                'ddlMarca' => $codMarca,
+                'ddlModelo' => 0,
+                'ddlTabelaReferencia' => $tabelaReferencia,
+                'txtCodFipe' => ''
+            );
 
 
-        $crawler = new Crawler($html);
-        $options = $crawler->filter('#ddlModelo > option');
+            /*
+             * Consultando modelos
+             */
+            $ch = curl_init("http://www.fipe.org.br/web/indices/veiculos/default.aspx?$tipo");
+            $options = array(
+                CURLOPT_COOKIEJAR => 'cookiejar',
+                CURLOPT_HTTPHEADER => array(
+                    "User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:32.0) Gecko/20100101 Firefox/32.0",
+                    "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+                    "Accept-Language: pt-BR,pt;q=0.8,en-US;q=0.5,en;q=0.3",
+                    "Accept-Encoding: gzip, deflate",
+                    "Referer: http://www.fipe.org.br/web/indices/veiculos/default.aspx?$tipo",
+                    "Cookie: " . FipeGratis::$__COOKIE . "",
+                    "Host: www.fipe.org.br",
+                    "Connection: keep-alive",
+                    "X-MicrosoftAjax: Delta=true"
+                ),
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_POSTFIELDS => http_build_query($paramters),
+                CURLOPT_FOLLOWLOCATION => 1
+            );
 
-        $modelos = array();
+            curl_setopt_array($ch, $options);
+            $html = curl_exec($ch);
+            curl_close($ch);
 
-        foreach ($options as $node) {
-            if ($node->getAttribute('value') != '0')
-                $modelos[] = array('codigo' => $node->getAttribute('value'), 'modelo' => $node->nodeValue);
+            $explode = explode('|', $html);
+
+            $key = array_search('__EVENTARGUMENT', $explode);
+            FipeGratis::$__PARAM_EVENTARGUMENT = $explode[$key + 1];
+
+            $key = array_search('__VIEWSTATE', $explode);
+            FipeGratis::$__PARAM_VIEWSTATE = $explode[$key + 1];
+
+            $key = array_search('__VIEWSTATEGENERATOR', $explode);
+            FipeGratis::$__PARAM_VIEWSTATEGENERATOR = $explode[$key + 1];
+
+            $key = array_search('__EVENTVALIDATION', $explode);
+            FipeGratis::$__PARAM_EVENTVALIDATION = $explode[$key + 1];
+
+
+            $crawler = new Crawler($html);
+            $options = $crawler->filter('#ddlModelo > option');
+
+            FipeGratis::$__MODELOS = array();
+
+            foreach ($options as $node) {
+                if ($node->getAttribute('value') != '0')
+                    FipeGratis::$__MODELOS[] = array('codigo' => $node->getAttribute('value'), 'modelo' => $node->nodeValue);
+            }
         }
 
-        return $modelos;
+        return FipeGratis::$__MODELOS;
     }
 
     /**
@@ -252,87 +278,91 @@ class FipeGratis {
      * @return array
      */
     public static function getAnos($tipo = null, $tabelaReferencia = null, $codMarca = null, $codModelo = null) {
+        if (is_null(FipeGratis::$__MODELO_ANOS) || is_null(FipeGratis::$__codModelo) || FipeGratis::$__codModelo != $codModelo) {
 
-        /*
-         * Verificando se exite $codModelo
-         */
-        $validate = array_filter(FipeGratis::getModelos($tipo, $tabelaReferencia, $codMarca), function($tables) use ($codModelo) {
-            return ($tables['codigo'] == $codModelo);
-        });
+            FipeGratis::$__codModelo = $codModelo;
+            
+            /*
+             * Verificando se exite $codModelo
+             */
+            $validate = array_filter(FipeGratis::getModelos($tipo, $tabelaReferencia, $codMarca), function($tables) use ($codModelo) {
+                return ($tables['codigo'] == $codModelo);
+            });
 
-        if (empty($validate))
-            throw new Exception("O modelo $codModelo não existe");
+            if (empty($validate))
+                throw new Exception("O modelo $codModelo não existe");
 
-        /*
-         * Montando parametros
-         */
-        $paramters = array(
-            'ScriptManager1' => 'updModelo|ddlModelo',
-            '__ASYNCPOST' => true,
-            '__EVENTTARGET' => 'ddlModelo',
-            '__LASTFOCUS' => '',
-            '__EVENTARGUMENT' => FipeGratis::$__PARAM_EVENTARGUMENT,
-            '__VIEWSTATE' => FipeGratis::$__PARAM_VIEWSTATE,
-            '__VIEWSTATEGENERATOR' => FipeGratis::$__PARAM_VIEWSTATEGENERATOR,
-            '__EVENTVALIDATION' => FipeGratis::$__PARAM_EVENTVALIDATION,
-            'ddlAnoValor' => 0,
-            'ddlMarca' => $codMarca,
-            'ddlModelo' => $codModelo,
-            'ddlTabelaReferencia' => $tabelaReferencia,
-            'txtCodFipe' => ''
-        );
+            /*
+             * Montando parametros
+             */
+            $paramters = array(
+                'ScriptManager1' => 'updModelo|ddlModelo',
+                '__ASYNCPOST' => true,
+                '__EVENTTARGET' => 'ddlModelo',
+                '__LASTFOCUS' => '',
+                '__EVENTARGUMENT' => FipeGratis::$__PARAM_EVENTARGUMENT,
+                '__VIEWSTATE' => FipeGratis::$__PARAM_VIEWSTATE,
+                '__VIEWSTATEGENERATOR' => FipeGratis::$__PARAM_VIEWSTATEGENERATOR,
+                '__EVENTVALIDATION' => FipeGratis::$__PARAM_EVENTVALIDATION,
+                'ddlAnoValor' => 0,
+                'ddlMarca' => $codMarca,
+                'ddlModelo' => $codModelo,
+                'ddlTabelaReferencia' => $tabelaReferencia,
+                'txtCodFipe' => ''
+            );
 
-        /*
-         * Consultando anos
-         */
-        $ch = curl_init("http://www.fipe.org.br/web/indices/veiculos/default.aspx?azxp=1&$tipo");
-        $options = array(
-            CURLOPT_COOKIEJAR => 'cookiejar',
-            CURLOPT_HTTPHEADER => array(
-                "User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:32.0) Gecko/20100101 Firefox/32.0",
-                "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-                "Accept-Language: pt-BR,pt;q=0.8,en-US;q=0.5,en;q=0.3",
-                "Accept-Encoding: gzip, deflate",
-                "Referer: http://www.fipe.org.br/web/indices/veiculos/default.aspx?azxp=1&$tipo",
-                "Cookie: " . FipeGratis::$__COOKIE . "",
-                "Host: www.fipe.org.br",
-                "Connection: keep-alive",
-                "X-MicrosoftAjax: Delta=true"
-            ),
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_POSTFIELDS => http_build_query($paramters),
-            CURLOPT_FOLLOWLOCATION => 1
-        );
+            /*
+             * Consultando anos
+             */
+            $ch = curl_init("http://www.fipe.org.br/web/indices/veiculos/default.aspx?azxp=1&$tipo");
+            $options = array(
+                CURLOPT_COOKIEJAR => 'cookiejar',
+                CURLOPT_HTTPHEADER => array(
+                    "User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:32.0) Gecko/20100101 Firefox/32.0",
+                    "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+                    "Accept-Language: pt-BR,pt;q=0.8,en-US;q=0.5,en;q=0.3",
+                    "Accept-Encoding: gzip, deflate",
+                    "Referer: http://www.fipe.org.br/web/indices/veiculos/default.aspx?azxp=1&$tipo",
+                    "Cookie: " . FipeGratis::$__COOKIE . "",
+                    "Host: www.fipe.org.br",
+                    "Connection: keep-alive",
+                    "X-MicrosoftAjax: Delta=true"
+                ),
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_POSTFIELDS => http_build_query($paramters),
+                CURLOPT_FOLLOWLOCATION => 1
+            );
 
-        curl_setopt_array($ch, $options);
-        $html = curl_exec($ch);
-        curl_close($ch);
+            curl_setopt_array($ch, $options);
+            $html = curl_exec($ch);
+            curl_close($ch);
 
-        $explode = explode('|', $html);
+            $explode = explode('|', $html);
 
-        $key = array_search('__EVENTARGUMENT', $explode);
-        FipeGratis::$__PARAM_EVENTARGUMENT = $explode[$key + 1];
+            $key = array_search('__EVENTARGUMENT', $explode);
+            FipeGratis::$__PARAM_EVENTARGUMENT = $explode[$key + 1];
 
-        $key = array_search('__VIEWSTATE', $explode);
-        FipeGratis::$__PARAM_VIEWSTATE = $explode[$key + 1];
+            $key = array_search('__VIEWSTATE', $explode);
+            FipeGratis::$__PARAM_VIEWSTATE = $explode[$key + 1];
 
-        $key = array_search('__VIEWSTATEGENERATOR', $explode);
-        FipeGratis::$__PARAM_VIEWSTATEGENERATOR = $explode[$key + 1];
+            $key = array_search('__VIEWSTATEGENERATOR', $explode);
+            FipeGratis::$__PARAM_VIEWSTATEGENERATOR = $explode[$key + 1];
 
-        $key = array_search('__EVENTVALIDATION', $explode);
-        FipeGratis::$__PARAM_EVENTVALIDATION = $explode[$key + 1];
+            $key = array_search('__EVENTVALIDATION', $explode);
+            FipeGratis::$__PARAM_EVENTVALIDATION = $explode[$key + 1];
 
-        $crawler = new Crawler($html);
-        $options = $crawler->filter('#ddlAnoValor > option');
+            $crawler = new Crawler($html);
+            $options = $crawler->filter('#ddlAnoValor > option');
 
-        $anos = array();
+            FipeGratis::$__MODELO_ANOS = array();
 
-        foreach ($options as $node) {
-            if ($node->getAttribute('value') != '0')
-                $anos[] = array('codigo' => $node->getAttribute('value'), 'ano' => $node->nodeValue);
+            foreach ($options as $node) {
+                if ($node->getAttribute('value') != '0')
+                    FipeGratis::$__MODELO_ANOS[] = array('codigo' => $node->getAttribute('value'), 'ano' => $node->nodeValue);
+            }
         }
 
-        return $anos;
+        return FipeGratis::$__MODELO_ANOS;
     }
 
     /**

@@ -25,6 +25,17 @@ class FipeGratis {
     private static $__PARAM_EVENTVALIDATION = null;
 
     /**
+     * Método para retornar o tipo a partir de uma string
+     *
+     * @throws Exception
+     * @return array
+     */
+    public static function getTipoByString($string) {
+        $class = new ReflectionClass('JansenFelipe\FipeGratis\FipeGratis');
+        return $class->getConstant($string);
+    }
+    
+    /**
      * Método para buscar as tabelas de referencia
      *
      * @throws Exception

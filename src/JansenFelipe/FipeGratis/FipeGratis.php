@@ -32,8 +32,7 @@ class FipeGratis {
     private static $__MARCAS = null;
     private static $__MODELOS = null;
     private static $__MODELO_ANOS = null;
-    
-    private static $__tipo = null; 
+    private static $__tipo = null;
     private static $__tabelaReferencia = null;
     private static $__codMarca = null;
     private static $__codModelo = null;
@@ -79,10 +78,10 @@ class FipeGratis {
      */
     public static function getMarcas($tipo = null, $tabelaReferencia = null) {
         if (is_null(FipeGratis::$__MARCAS) || is_null(FipeGratis::$__tipo) || FipeGratis::$__tipo != $tipo || is_null(FipeGratis::$__tabelaReferencia) || FipeGratis::$__tabelaReferencia != $tabelaReferencia) {
-            
+
             FipeGratis::$__tabelaReferencia = $tabelaReferencia;
             FipeGratis::$__tipo = $tipo;
-            
+
             FipeGratis::setParams($tipo);
 
             /*
@@ -160,9 +159,21 @@ class FipeGratis {
 
             FipeGratis::$__MARCAS = array();
 
+            $client = new Client();
+
             foreach ($options as $node) {
-                if ($node->getAttribute('value') != '0')
-                    FipeGratis::$__MARCAS[] = array('codigo' => $node->getAttribute('value'), 'marca' => $node->nodeValue);
+                if ($node->getAttribute('value') != '0') {
+                    $logo = null;
+
+                    //Tentando buscar logo
+                    try {
+                        $crawler = $client->request('GET', "https://www.google.com.br/search?tbm=isch&q=$node->nodeValue logo");
+                        $logo = $crawler->filter('#ires > table > tr:nth-child(1) > td:nth-child(1) > a >img')->attr('src');
+                    } catch (Exception $e) {
+                        
+                    }
+                    FipeGratis::$__MARCAS[] = array('codigo' => $node->getAttribute('value'), 'marca' => $node->nodeValue, 'logo' => $logo);
+                }
             }
         }
 
@@ -182,7 +193,7 @@ class FipeGratis {
         if (is_null(FipeGratis::$__MODELOS) || is_null(FipeGratis::$__codMarca) || FipeGratis::$__codMarca != $codMarca) {
 
             FipeGratis::$__codMarca = $codMarca;
-            
+
             /*
              * Verificando se exite $codMarca
              */
@@ -281,7 +292,7 @@ class FipeGratis {
         if (is_null(FipeGratis::$__MODELO_ANOS) || is_null(FipeGratis::$__codModelo) || FipeGratis::$__codModelo != $codModelo) {
 
             FipeGratis::$__codModelo = $codModelo;
-            
+
             /*
              * Verificando se exite $codModelo
              */
